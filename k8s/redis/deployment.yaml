@@ -1,6 +1,5 @@
 ---
-# Redis Deployment - Caching Layer
-# Provides in-memory caching to reduce MongoDB read load
+# Redis Deployment - High-Memory Caching and Message Queue
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -27,20 +26,24 @@ spec:
           args:
             - redis-server
             - --maxmemory
-            - "256mb"
+            - "512mb"
             - --maxmemory-policy
             - "allkeys-lru"
             - --tcp-keepalive
             - "60"
             - --timeout
             - "0"
+            - --save
+            - ""  # Disable RDB snapshots for performance
+            - --appendonly
+            - "no"  # Disable AOF for performance
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
               memory: "256Mi"
-              cpu: "500m"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
           readinessProbe:
             tcpSocket:
               port: 6379
