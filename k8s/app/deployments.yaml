@@ -1,0 +1,83 @@
+---
+# ──────────────────────────────────────────────────────────────────────────────
+# Python Application Deployment (FastAPI + Uvicorn) - OPTIMIZED
+#
+# Optimizations:
+#   - Increased replicas from 1 to 5 (base load handling)
+#   - Higher resource limits for better performance
+#   - Added Redis environment variables
+#   - Optimized probe settings
+#   - Added pod anti-affinity for better distribution
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-python
+  namespace: assessment
+  labels:
+    app: app-python
+    language: python
+    assessment: "true"
+spec:
+  replicas: 5  # Increased from 1 for better load distribution
+  selector:
+    matchLabels:
+      app: app-python
+  template:
+    metadata:
+      labels:
+        app: app-python
+        language: python
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - app-python
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: app-python
+          image: assessment/app-python:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MONGO_URI
+              value: "mongodb://mongo:27017/assessmentdb"
+            - name: REDIS_URI
+              value: "redis://redis:6379/0"
+            - name: APP_PORT
+              value: "8000"
+            - name: CACHE_ENABLED
+              value: "true"
+            - name: CACHE_TTL
+              value: "30"  # 30 second cache TTL
+          resources:
+            requests:
+              memory: "256Mi"  # Increased from 128Mi
+              cpu: "500m"      # Increased from 250m
+            limits:
+              memory: "512Mi"
+              cpu: "2000m"     # Increased from 1000m for more workers
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 5
