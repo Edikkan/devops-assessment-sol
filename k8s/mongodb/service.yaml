@@ -1,0 +1,20 @@
+---
+# MongoDB ClusterIP Service
+# Internal-only — the app pods connect via DNS: mongo.assessment.svc.cluster.local
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: assessment
+  labels:
+    app: mongo
+    assessment: "true"
+spec:
+  selector:
+    app: mongo
+  ports:
+    - name: mongo
+      protocol: TCP
+      port: 27017
+      targetPort: 27017
+  type: ClusterIP
