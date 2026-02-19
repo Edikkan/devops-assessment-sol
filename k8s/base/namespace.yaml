@@ -1,0 +1,8 @@
+---
+# Assessment namespace — all resources live here
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: assessment
+  labels:
+    assessment: "true"
