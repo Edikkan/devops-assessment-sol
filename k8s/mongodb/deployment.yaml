@@ -1,0 +1,78 @@
+---
+# MongoDB Deployment — Single Node (scaling forbidden)
+#
+# ╔════════════════════════════════════════════════════════╗
+# ║           ASSESSMENT CONSTRAINTS — DO NOT MODIFY      ║
+# ║  replicas    : 1   (horizontal scaling is prohibited)  ║
+# ║  memory limit: 500Mi                                   ║
+# ║  The 100 IOPS cap is enforced via mongod wiredTiger    ║
+# ║  cache settings and storage class annotations.         ║
+# ╚════════════---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  namespace: assessment
+  labels:
+    app: mongo
+    assessment: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: mongo
+          image: mongo:7.0
+          ports:
+            - containerPort: 27017
+          args:
+            - "--wiredTigerCacheSizeGB=0.25"
+            - "--setParameter"
+            - "wiredTigerConcurrentReadTransactions=10"
+            - "--setParameter"
+            - "wiredTigerConcurrentWriteTransactions=10"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "500Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+          readinessProbe:
+            exec:
+              command:
+                - mongosh
+                - "--eval"
+                - "db.adminCommand('ping').ok"
+                - "--quiet"
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - mongosh
+                - "--eval"
+                - "db.adminCommand('ping').ok"
+                - "--quiet"
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
+      volumes:
+        - name: mongo-storage
+          persistentVolumeClaim:
+            claimName: mongo-pvc
