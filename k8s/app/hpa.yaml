@@ -1,12 +1,5 @@
 ---
-# ──────────────────────────────────────────────────────────────────────────────
-# HorizontalPodAutoscaler — Python App (OPTIMIZED)
-#
-# Optimizations:
-#   - Lower CPU threshold for faster scaling
-#   - Higher max replicas for peak load
-#   - Added scale-down stabilization
-# ──────────────────────────────────────────────────────────────────────────────
+# HorizontalPodAutoscaler - AGGRESSIVE SCALING
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -17,30 +10,34 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: app-python
-  minReplicas: 5      # Start with 5 replicas for baseline
-  maxReplicas: 50     # Scale up to 50 for peak 10k VUs
+  minReplicas: 10     # Start with 10
+  maxReplicas: 100    # Scale up to 100 for peak load
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 50  # Lower threshold for faster scaling
+          averageUtilization: 40  # Scale at 40% CPU
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: 70
+          averageUtilization: 60
   behavior:
     scaleUp:
-      stabilizationWindowSeconds: 30
+      stabilizationWindowSeconds: 10  # Scale up quickly
       policies:
         - type: Percent
-          value: 100
+          value: 200  # Double replicas every 15s
           periodSeconds: 15
+        - type: Pods
+          value: 10   # Or add 10 pods every 15s
+          periodSeconds: 15
+      selectPolicy: Max
     scaleDown:
-      stabilizationWindowSeconds: 300  # Wait 5 min before scaling down
+      stabilizationWindowSeconds: 600  # Wait 10 min before scaling down
       policies:
         - type: Percent
           value: 10
