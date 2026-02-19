@@ -1,14 +1,5 @@
 ---
-# ──────────────────────────────────────────────────────────────────────────────
-# Python Application Deployment (FastAPI + Uvicorn) - OPTIMIZED
-#
-# Optimizations:
-#   - Increased replicas from 1 to 5 (base load handling)
-#   - Higher resource limits for better performance
-#   - Added Redis environment variables
-#   - Optimized probe settings
-#   - Added pod anti-affinity for better distribution
-# ──────────────────────────────────────────────────────────────────────────────
+# Python Application Deployment - HIGH PERFORMANCE
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,7 +10,7 @@ metadata:
     language: python
     assessment: "true"
 spec:
-  replicas: 5  # Increased from 1 for better load distribution
+  replicas: 10  # Start with 10 replicas for immediate capacity
   selector:
     matchLabels:
       app: app-python
@@ -54,30 +45,36 @@ spec:
               value: "redis://redis:6379/0"
             - name: APP_PORT
               value: "8000"
-            - name: CACHE_ENABLED
-              value: "true"
             - name: CACHE_TTL
-              value: "30"  # 30 second cache TTL
+              value: "300"  # 5 minute cache
+            - name: MAX_QUEUE_SIZE
+              value: "200000"
+            - name: BATCH_SIZE
+              value: "200"  # Batch 200 writes
+            - name: BATCH_TIMEOUT_MS
+              value: "50"   # 50ms batch timeout
+            - name: WRITE_WORKERS
+              value: "4"    # 4 background workers per pod
           resources:
             requests:
-              memory: "256Mi"  # Increased from 128Mi
-              cpu: "500m"      # Increased from 250m
-            limits:
               memory: "512Mi"
-              cpu: "2000m"     # Increased from 1000m for more workers
+              cpu: "1000m"
+            limits:
+              memory: "1Gi"
+              cpu: "4000m"
           readinessProbe:
             httpGet:
               path: /readyz
               port: 8000
-            initialDelaySeconds: 10
+            initialDelaySeconds: 5
             periodSeconds: 5
             failureThreshold: 3
-            timeoutSeconds: 5
+            timeoutSeconds: 3
           livenessProbe:
             httpGet:
               path: /healthz
               port: 8000
-            initialDelaySeconds: 15
+            initialDelaySeconds: 10
             periodSeconds: 10
-            failureThreshold: 3
-            timeoutSeconds: 5
+            failureThreshold: 5
+            timeoutSeconds: 3
