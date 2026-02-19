@@ -1,0 +1,47 @@
+---
+# ──────────────────────────────────────────────────────────────────────────────
+# HorizontalPodAutoscaler — Python App (OPTIMIZED)
+#
+# Optimizations:
+#   - Lower CPU threshold for faster scaling
+#   - Higher max replicas for peak load
+#   - Added scale-down stabilization
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app-python-hpa
+  namespace: assessment
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app-python
+  minReplicas: 5      # Start with 5 replicas for baseline
+  maxReplicas: 50     # Scale up to 50 for peak 10k VUs
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50  # Lower threshold for faster scaling
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Wait 5 min before scaling down
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
