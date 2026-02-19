@@ -1,0 +1,49 @@
+---
+# Python App Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-python
+  namespace: assessment
+  labels:
+    app: app-python
+    assessment: "true"
+spec:
+  selector:
+    app: app-python
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+---
+# ──────────────────────────────────────────────────────────────────────────────
+# Ingress — routes external traffic into the cluster via k3d's Traefik ingress.
+#
+# Backend: Python app on /
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: assessment-ingress
+  namespace: assessment
+  labels:
+    assessment: "true"
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    # Rate limiting to protect MongoDB from excessive load
+    traefik.ingress.kubernetes.io/ratelimit.average: "1000"
+    traefik.ingress.kubernetes.io/ratelimit.burst: "500"
+spec:
+  rules:
+    - host: assessment.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app-python
+                port:
+                  number: 80
