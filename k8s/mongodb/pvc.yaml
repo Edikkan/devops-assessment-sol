@@ -1,0 +1,17 @@
+---
+# MongoDB PersistentVolumeClaim
+# Storage for the single-node MongoDB instance.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+  namespace: assessment
+  labels:
+    app: mongo
+    assessment: "true"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
