@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-python-worker
+  namespace: assessment
+  labels:
+    app: app-python-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-python-worker
+  template:
+    metadata:
+      labels:
+        app: app-python-worker
+    spec:
+      containers:
+      - name: worker
+        image: assessment/app-python:latest
+        imagePullPolicy: IfNotPresent
+        command: ["python", "worker.py"]
+        env:
+        - name: MONGO_URI
+          value: "mongodb://mongo:27017/assessmentdb"
+        - name: REDIS_HOST
+          value: "redis"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: BATCH_SIZE
+          value: "50"
+        - name: SLEEP_SECS
+          value: "0.5"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; import redis; r=redis.Redis(host='redis', port=6379); r.ping(); sys.exit(0)"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; import redis; r=redis.Redis(host='redis', port=6379); r.ping(); sys.exit(0)"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
