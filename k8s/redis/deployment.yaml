@@ -45,16 +45,22 @@ spec:
               memory: "512Mi"
               cpu: "1000m"
           readinessProbe:
-            tcpSocket:
-              port: 6379
+            exec:
+              command:
+              - redis-cli
+              - ping
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 2
             failureThreshold: 3
           livenessProbe:
-            tcpSocket:
-              port: 6379
+            exec:
+              command:
+              - redis-cli
+              - ping
             initialDelaySeconds: 10
             periodSeconds: 20
+            timeoutSeconds: 2
             failureThreshold: 5
 ---
 # Redis Service
