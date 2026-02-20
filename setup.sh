@@ -52,6 +52,7 @@ kubectl apply -f "${SCRIPT_DIR}/k8s/base/namespace.yaml"
 kubectl apply -f "${SCRIPT_DIR}/k8s/mongodb/"
 kubectl apply -f "${SCRIPT_DIR}/k8s/redis/"
 kubectl apply -f "${SCRIPT_DIR}/k8s/app/"
+kubectl apply -f "${SCRIPT_DIR}/k8s/worker/"  # ADD THIS LINE
 
 success "Manifests applied."
 
@@ -64,6 +65,9 @@ kubectl rollout status deployment/redis -n "${NAMESPACE}" --timeout=120s
 
 info "Waiting for Python app..."
 kubectl rollout status deployment/app-python -n "${NAMESPACE}" --timeout=180s
+
+info "Waiting for Python worker..."
+kubectl rollout status deployment/app-python-worker -n "${NAMESPACE}" --timeout=180s
 
 success "All deployments ready!"
 
@@ -85,7 +89,12 @@ echo "    Health       : http://assessment.local/healthz"
 echo "    Readiness    : http://assessment.local/readyz"
 echo "    API          : http://assessment.local/api/data"
 echo "    Stats        : http://assessment.local/api/stats"
-echo "    Cache Status : http://assessment.local/api/cache/status"
+echo ""
+echo "  Components:"
+echo "    MongoDB     : 1 node (500Mi RAM, ~100 IOPS)"
+echo "    Redis       : 1 node (caching + queue)"
+echo "    App         : 3 replicas (FastAPI)"
+echo "    Worker      : 1 replica (async MongoDB writer)"
 echo ""
 echo "  Stress test:"
 echo "    k6 run stress-test/stress-test.js"
@@ -93,5 +102,6 @@ echo ""
 echo "  Monitor:"
 echo "    kubectl get pods -n ${NAMESPACE} -w"
 echo "    kubectl top pods -n ${NAMESPACE}"
+echo "    kubectl logs -n ${NAMESPACE} deployment/app-python-worker -f"
 echo ""
 echo -e "${GREEN}════════════════════════════════════════════════════════${NC}"
