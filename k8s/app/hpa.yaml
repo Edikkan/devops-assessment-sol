@@ -1,4 +1,3 @@
----
 # HorizontalPodAutoscaler - AGGRESSIVE SCALING
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -18,7 +17,7 @@ spec:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 40  # Scale at 40% CPU
+          averageUtilization: 30  # Lowered from 40% - pods use less CPU now
     - type: Resource
       resource:
         name: memory
@@ -42,3 +41,11 @@ spec:
         - type: Percent
           value: 10
           periodSeconds: 60
+---
+# Assessment namespace — all resources live here
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: assessment
+  labels:
+    assessment: "true"
