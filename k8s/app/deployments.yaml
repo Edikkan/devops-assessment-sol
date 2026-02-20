@@ -1,5 +1,3 @@
----
-# Python Application Deployment - HIGH PERFORMANCE
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,10 +5,8 @@ metadata:
   namespace: assessment
   labels:
     app: app-python
-    language: python
-    assessment: "true"
 spec:
-  replicas: 10  # Start with 10 replicas for immediate capacity
+  replicas: 3
   selector:
     matchLabels:
       app: app-python
@@ -18,63 +14,39 @@ spec:
     metadata:
       labels:
         app: app-python
-        language: python
     spec:
-      affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: app
-                      operator: In
-                      values:
-                        - app-python
-                topologyKey: kubernetes.io/hostname
       containers:
-        - name: app-python
-          image: assessment/app-python:latest
-          imagePullPolicy: Never
-          ports:
-            - containerPort: 8000
-          env:
-            - name: MONGO_URI
-              value: "mongodb://mongo:27017/assessmentdb"
-            - name: REDIS_URI
-              value: "redis://redis:6379/0"
-            - name: APP_PORT
-              value: "8000"
-            - name: CACHE_TTL
-              value: "300"  # 5 minute cache
-            - name: MAX_QUEUE_SIZE
-              value: "200000"
-            - name: BATCH_SIZE
-              value: "200"  # Batch 200 writes
-            - name: BATCH_TIMEOUT_MS
-              value: "50"   # 50ms batch timeout
-            - name: WRITE_WORKERS
-              value: "4"    # 4 background workers per pod
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "1000m"
-            limits:
-              memory: "1Gi"
-              cpu: "4000m"
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: 8000
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            failureThreshold: 3
-            timeoutSeconds: 3
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 8000
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            failureThreshold: 5
-            timeoutSeconds: 3
+      - name: app
+        image: assessment/app-python:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: MONGO_URI
+          value: "mongodb://mongo:27017/assessmentdb"
+        - name: REDIS_HOST
+          value: "redis"  # NEW
+        - name: REDIS_PORT
+          value: "6379"   # NEW
+        - name: APP_PORT
+          value: "8000"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
